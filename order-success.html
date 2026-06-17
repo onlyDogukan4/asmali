@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <title>Sipariş Alındı | Asmalı Ambalaj</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="padding-bottom:24px">
+
+<header class="site-header">
+    <div class="header-logo">A</div>
+    <div class="header-brand">
+        <h1>Asmalı Ambalaj</h1>
+        <p>Sipariş Onayı</p>
+    </div>
+    <a class="header-tel" href="tel:05001234567">📞</a>
+</header>
+
+<main class="main-container">
+
+    <!-- Başarı Animasyonu -->
+    <div class="success-hero">
+        <div class="success-icon">✅</div>
+        <div class="success-title">Siparişiniz Alındı!</div>
+        <div class="success-sub" id="success-sub">Siparişiniz başarıyla oluşturuldu.</div>
+    </div>
+
+    <!-- Sipariş Kodu -->
+    <div class="order-code-box">
+        <div class="order-code-label">Sipariş Kodunuz</div>
+        <div class="order-code" id="order-code">—</div>
+        <div class="order-code-copy">
+            <button class="btn-copy" onclick="copyOrderCode()" style="display:inline-block;padding:8px 20px;font-size:13px;">
+                📋 Kopyala
+            </button>
+        </div>
+    </div>
+
+    <!-- IBAN Bilgisi (IBAN ödemeler için) -->
+    <div class="iban-payment-info" id="iban-section" style="display:none">
+        <h3>🏦 Ödeme Bilgileri</h3>
+        <div class="iban-detail">
+            <span class="iban-detail-label">Banka:</span>
+            <span class="iban-detail-value" id="si-bank">—</span>
+        </div>
+        <div class="iban-detail">
+            <span class="iban-detail-label">Hesap Adı:</span>
+            <span class="iban-detail-value" id="si-name">—</span>
+        </div>
+        <div class="iban-detail">
+            <span class="iban-detail-label">IBAN:</span>
+            <div style="flex:1">
+                <span class="iban-detail-value" id="si-iban" style="font-family:monospace;font-size:13px;">—</span>
+                <button class="btn-copy" onclick="copySuccessIban()" style="margin-top:6px;display:block">Kopyala</button>
+            </div>
+        </div>
+        <div class="iban-detail">
+            <span class="iban-detail-label">Tutar:</span>
+            <span class="iban-detail-value amount-highlight" id="si-amount">—</span>
+        </div>
+        <div class="iban-detail">
+            <span class="iban-detail-label">Açıklama:</span>
+            <span class="iban-detail-value" id="si-desc" style="color:var(--danger)">Sipariş kodunuzu yazın!</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.6;">
+            ⚠️ Havale açıklamasına mutlaka <strong>sipariş kodunuzu</strong> yazın. Ödemeniz doğrulandıktan sonra siparişiniz hazırlanmaya başlanacaktır.
+        </p>
+    </div>
+
+    <!-- Sonraki Adımlar -->
+    <div class="next-steps">
+        <div class="next-step">
+            <div class="next-step-num">1</div>
+            <div class="next-step-text">Sipariş kodunuzu kaydedin veya ekran görüntüsü alın.</div>
+        </div>
+        <div class="next-step" id="step-2-paytr" style="display:none">
+            <div class="next-step-num">2</div>
+            <div class="next-step-text">Ödemeniz onaylandı. Siparişiniz hazırlanmaya başlanacak.</div>
+        </div>
+        <div class="next-step" id="step-2-iban" style="display:none">
+            <div class="next-step-num">2</div>
+            <div class="next-step-text">Yukarıdaki IBAN'a ödeme yapın, açıklamaya sipariş kodunuzu yazın.</div>
+        </div>
+        <div class="next-step">
+            <div class="next-step-num" id="step-3-num">3</div>
+            <div class="next-step-text">Kargo takip numaranız SMS ile iletilecek.</div>
+        </div>
+    </div>
+
+    <!-- Aksiyonlar -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+        <a href="/order-track.html" class="btn-submit" style="text-align:center;text-decoration:none;">
+            🔍 Sipariş Durumumu Takip Et
+        </a>
+        <a href="/" class="btn-submit" style="background:linear-gradient(135deg,var(--text-mid),var(--text));text-align:center;text-decoration:none;box-shadow:none;">
+            🛒 Tekrar Sipariş Ver
+        </a>
+        <a id="wa-btn" href="#" class="btn-submit" style="background:linear-gradient(135deg,#25D366,#128C7E);text-align:center;text-decoration:none;box-shadow:none;display:none">
+            💬 WhatsApp İle Ulaş
+        </a>
+    </div>
+
+</main>
+
+<script>
+(function() {
+    const params    = new URLSearchParams(location.search);
+    const method    = params.get('method') || 'paytr';
+    const orderId   = localStorage.getItem('last_order_id') || '—';
+    const ibanInfo  = JSON.parse(localStorage.getItem('last_iban_info') || 'null');
+
+    // Sipariş kodu
+    document.getElementById('order-code').textContent = orderId;
+
+    const sub = document.getElementById('success-sub');
+
+    if (method === 'iban' && ibanInfo) {
+        sub.textContent = 'Siparişiniz oluşturuldu. Lütfen aşağıdaki bilgilerle ödeme yapın.';
+        const ibanSec = document.getElementById('iban-section');
+        ibanSec.style.display = 'block';
+        document.getElementById('si-bank').textContent  = ibanInfo.bank    || '—';
+        document.getElementById('si-name').textContent  = ibanInfo.accountName || '—';
+        document.getElementById('si-iban').textContent  = ibanInfo.iban    || '—';
+        document.getElementById('si-amount').textContent= formatMoney(ibanInfo.amount || 0);
+        document.getElementById('si-desc').textContent  = orderId;
+        document.getElementById('step-2-iban').style.display = 'flex';
+        document.getElementById('step-3-num').textContent = '3';
+    } else {
+        sub.textContent = 'Ödemeniz onaylandı. Siparişiniz hazırlanmaya başlanacak.';
+        document.getElementById('step-2-paytr').style.display = 'flex';
+    }
+
+    // WhatsApp butonu
+    const tel = '905001234567';
+    const msg = encodeURIComponent(`Merhaba, ${orderId} numaralı siparişim hakkında bilgi almak istiyorum.`);
+    const waBtn = document.getElementById('wa-btn');
+    waBtn.href = `https://wa.me/${tel}?text=${msg}`;
+    waBtn.style.display = 'flex';
+
+    // Sepeti temizle (paytr başarı)
+    if (method === 'paytr') {
+        localStorage.removeItem('qrweb_cart');
+    }
+
+    function formatMoney(n) {
+        return new Intl.NumberFormat('tr-TR', { style:'currency', currency:'TRY', maximumFractionDigits:2 }).format(n);
+    }
+
+    window.copyOrderCode = function() {
+        const code = document.getElementById('order-code').textContent;
+        navigator.clipboard?.writeText(code).catch(() => {});
+        const btn = event.target;
+        btn.textContent = '✓ Kopyalandı!';
+        setTimeout(() => btn.textContent = '📋 Kopyala', 2000);
+    };
+    window.copySuccessIban = function() {
+        const iban = document.getElementById('si-iban').textContent.replace(/\s/g,'');
+        navigator.clipboard?.writeText(iban).catch(() => {});
+        const btn = event.target;
+        btn.textContent = '✓ Kopyalandı!';
+        setTimeout(() => btn.textContent = 'Kopyala', 2000);
+    };
+})();
+</script>
+</body>
+</html>

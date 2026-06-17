@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    { "source": "/api/admin-login",          "destination": "/api/admin" },
+    { "source": "/api/products",             "destination": "/api/products" },
+    { "source": "/api/orders",               "destination": "/api/orders" },
+    { "source": "/api/order-track",          "destination": "/api/orders?action=track" },
+    { "source": "/api/paytr-token",          "destination": "/api/paytr?action=token" },
+    { "source": "/api/paytr-callback",       "destination": "/api/paytr?action=callback" },
+    { "source": "/api/paytr-installments",   "destination": "/api/paytr?action=installments" }
+  ],
+  "headers": [
+    {
+      "source": "/(css|js|images)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options",  "value": "nosniff" },
+        { "key": "X-Frame-Options",         "value": "SAMEORIGIN" },
+        { "key": "X-XSS-Protection",        "value": "1; mode=block" },
+        { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

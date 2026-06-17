@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr" data-min-order="500" data-free-shipping="1500" data-ship-fee="150">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Asmalı Ambalaj — Karton bardak, plastik bardak ve ambalaj malzemeleri toplu sipariş. Hızlı kargo, fatura kesilir.">
+    <meta name="theme-color" content="#065F46">
+    <title>Asmalı Ambalaj | Toplu Sipariş</title>
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+    <div class="header-logo">A</div>
+    <div class="header-brand">
+        <h1>Asmalı Ambalaj</h1>
+        <p>Toplu ambalaj & sarf malzeme</p>
+    </div>
+    <a class="header-tel" href="tel:05001234567">
+        📞 0500 123 45 67
+    </a>
+</header>
+
+<!-- ── Trust Banner ─────────────────────────────────────────────────────────── -->
+<div class="trust-banner">
+    <div class="trust-item"><span class="icon">🔒</span><span>SSL Güvenli</span></div>
+    <div class="trust-item"><span class="icon">🧾</span><span>Fatura Kesilir</span></div>
+    <div class="trust-item"><span class="icon">🚚</span><span>Hızlı Kargo</span></div>
+    <div class="trust-item"><span class="icon">✅</span><span>İade Garantisi</span></div>
+</div>
+
+<!-- ── Minimum Sipariş Uyarısı ─────────────────────────────────────────────── -->
+<div class="notice-bar">
+    <span class="icon">⚠️</span>
+    Minimum sipariş tutarı <strong>500 TL</strong>'dir. 1.500 TL üzeri kargo ücretsiz.
+</div>
+
+<!-- ── Adım Göstergesi ────────────────────────────────────────────────────────── -->
+<div class="steps-bar">
+    <div class="step active">
+        <div class="step-num">1</div>
+        <div class="step-label">Ürün Seç</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-label">Bilgi Gir</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-label">Öde</div>
+    </div>
+</div>
+
+<!-- ── Ürünler ─────────────────────────────────────────────────────────────── -->
+<main class="main-container">
+    <div class="section-title">📦 Popüler Ürünler</div>
+    <div class="product-grid" id="product-grid">
+        <!-- JS ile doldurulur -->
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+    </div>
+</main>
+
+<!-- ── Sticky Sepet ────────────────────────────────────────────────────────── -->
+<div class="cart-bar" id="cart-bar" style="display:none">
+    <div class="cart-info">
+        <div class="cart-count" id="cart-count-text">0 ürün</div>
+        <div class="cart-total" id="cart-total-text">0,00 ₺</div>
+    </div>
+    <button class="btn-checkout" id="btn-checkout">
+        <span class="cart-badge" id="cart-badge">0</span>
+        SİPARİŞ VER →
+    </button>
+</div>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<script src="/js/app.js" defer></script>
+</body>
+</html>

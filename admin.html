@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Admin Paneli | Asmalı Ambalaj</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="admin-body">
+
+<!-- ── Login Ekranı ──────────────────────────────────────────────────────────── -->
+<div id="admin-login" class="admin-login-screen">
+    <div class="admin-login-card">
+        <div class="admin-login-icon">🛡️</div>
+        <div class="admin-login-title">Yönetici Paneli</div>
+        <div class="admin-login-sub">Erişmek için şifrenizi girin</div>
+        <input type="password" id="admin-password" class="admin-input" placeholder="Şifre" autocomplete="current-password">
+        <button id="btn-login" class="btn-admin-login">Giriş Yap</button>
+        <div id="admin-error" class="admin-error"></div>
+    </div>
+</div>
+
+<!-- ── Admin Paneli ──────────────────────────────────────────────────────────── -->
+<div id="admin-main" class="admin-main">
+
+    <!-- Top Bar -->
+    <div class="admin-topbar">
+        <div class="admin-topbar-brand">
+            <div class="admin-topbar-logo">A</div>
+            <div>
+                <div class="admin-topbar-title">Asmalı Ambalaj</div>
+                <div class="admin-topbar-sub">Sipariş Yönetim Paneli</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="loadOrders()" style="background:#334155;color:#94A3B8;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+                🔄 Yenile
+            </button>
+            <button id="btn-logout" class="btn-admin-logout">
+                ← Çıkış
+            </button>
+        </div>
+    </div>
+
+    <!-- Yeni Sipariş Pulse -->
+    <div class="new-order-pulse" id="new-order-pulse">
+        🔔 Yeni Sipariş!
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="admin-stats">
+        <div class="stat-card highlight">
+            <div class="stat-num" id="stat-new">—</div>
+            <div class="stat-label">Bekleyen</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" id="stat-ship">—</div>
+            <div class="stat-label">Kargoda</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num" id="stat-today">—</div>
+            <div class="stat-label">Bugün Ciro</div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="admin-filters">
+        <button class="filter-btn active" data-filter="all">Tümü</button>
+        <button class="filter-btn" data-filter="odeme-bekleniyor">💰 Ödeme Bekleniyor</button>
+        <button class="filter-btn" data-filter="onay-bekliyor">✅ Onay Bekliyor</button>
+        <button class="filter-btn" data-filter="kargoda">🚚 Kargoda</button>
+        <button class="filter-btn" data-filter="done">📋 Tamamlanan</button>
+    </div>
+
+    <!-- Sipariş Listesi -->
+    <div class="admin-orders" id="admin-orders">
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>Siparişler yükleniyor...</p>
+        </div>
+    </div>
+
+</div>
+
+<script src="/js/admin.js" defer></script>
+</body>
+</html>

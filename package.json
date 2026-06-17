@@ -1,0 +1,18 @@
+{
+  "name": "qr-web",
+  "version": "1.0.0",
+  "description": "Sanayi esnafı için QR tabanlı sipariş sistemi",
+  "type": "module",
+  "scripts": {
+    "dev": "node -r dotenv/config server.js",
+    "start": "node -r dotenv/config server.js",
+    "seed": "node -r dotenv/config scripts/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

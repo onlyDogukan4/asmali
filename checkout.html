@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <title>Sipariş & Ödeme | Asmalı Ambalaj</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="padding-bottom:20px">
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+    <a href="/" style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;text-decoration:none;">
+        <span style="font-size:18px">←</span> Geri
+    </a>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:800;color:#fff;">Sipariş & Ödeme</div>
+    <div style="width:60px"></div>
+</header>
+
+<!-- ── Adım Göstergesi ────────────────────────────────────────────────────────── -->
+<div class="steps-bar">
+    <div class="step done">
+        <div class="step-num">✓</div>
+        <div class="step-label">Ürün Seç</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step active">
+        <div class="step-num">2</div>
+        <div class="step-label">Bilgi & Ödeme</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-label">Onay</div>
+    </div>
+</div>
+
+<main class="main-container">
+
+    <!-- Sipariş Özeti -->
+    <div class="order-summary">
+        <div class="order-summary-head">🛒 Sipariş Özeti</div>
+        <div class="order-summary-body">
+            <div id="summary-items">
+                <div class="skeleton" style="height:52px;border-radius:8px;margin-bottom:8px"></div>
+                <div class="skeleton" style="height:52px;border-radius:8px"></div>
+            </div>
+            <div class="summary-totals" id="summary-totals"></div>
+        </div>
+    </div>
+
+    <!-- Teslimat Bilgileri -->
+    <div class="checkout-section">
+        <div class="checkout-section-head">📋 Teslimat Bilgileri</div>
+        <div class="checkout-section-body">
+            <div class="form-group">
+                <label class="form-label" for="customerName">Ad Soyad / Firma Ünvanı <span class="req">*</span></label>
+                <input type="text" id="customerName" class="form-input" placeholder="Örn: Ahmet Yılmaz / Yılmaz Tic." autocomplete="name">
+                <div class="form-error" id="customerName-err"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customerPhone">Telefon Numarası <span class="req">*</span></label>
+                <input type="tel" id="customerPhone" class="form-input" placeholder="05XX XXX XX XX" autocomplete="tel">
+                <div class="form-error" id="customerPhone-err"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customerEmail">E-posta <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(isteğe bağlı)</span></label>
+                <input type="email" id="customerEmail" class="form-input" placeholder="ornek@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customerAddress">Teslimat Adresi <span class="req">*</span></label>
+                <textarea id="customerAddress" class="form-input" rows="3" placeholder="Mahalle, sokak, no, ilçe ve şehir bilgilerini eksiksiz yazın." autocomplete="street-address"></textarea>
+                <div class="form-error" id="customerAddress-err"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="customerNote">Sipariş Notu <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(isteğe bağlı)</span></label>
+                <textarea id="customerNote" class="form-input" rows="2" placeholder="Örn: Logo dosyam aşağıda — veya kapı kodu: 1234"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ödeme Yöntemi -->
+    <div class="checkout-section">
+        <div class="checkout-section-head">💳 Ödeme Yöntemi Seçin</div>
+        <div class="checkout-section-body">
+            <div class="payment-options">
+
+                <!-- PayTR Kart -->
+                <div class="payment-option selected" data-method="paytr">
+                    <div class="payment-radio"></div>
+                    <div class="payment-info">
+                        <div class="payment-title">💳 Kredi / Banka Kartı</div>
+                        <div class="payment-sub">PayTR altyapısı — 3D Secure korumalı, taksit imkânı</div>
+                        <div class="payment-icons">
+                            <span class="payment-icon-badge">3D Secure</span>
+                            <span class="payment-icon-badge">SSL</span>
+                            <span class="payment-icon-badge">BDDK Lisanslı</span>
+                            <span class="payment-icon-badge">Taksit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IBAN -->
+                <div class="payment-option" data-method="iban">
+                    <div class="payment-radio"></div>
+                    <div class="payment-info">
+                        <div class="payment-title">🏦 Havale / EFT
+                            <span style="background:#D1FAE5;color:#065F46;font-size:11px;font-weight:800;padding:2px 8px;border-radius:100px;margin-left:6px;">%2 İndirim</span>
+                        </div>
+                        <div class="payment-sub">Banka havalesi ile %2 ek indirim kazanın</div>
+
+                        <!-- IBAN Bilgisi -->
+                        <div class="iban-box" id="iban-info-box">
+                            <p style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px;">
+                                ✅ Sipariş oluşturulduktan sonra aşağıdaki hesaba ödeme yapın:
+                            </p>
+                            <div class="iban-row">
+                                <span class="iban-label">Banka:</span>
+                                <span class="iban-val">Garanti BBVA</span>
+                            </div>
+                            <div class="iban-row">
+                                <span class="iban-label">Hesap Adı:</span>
+                                <span class="iban-val">Asmalı Ambalaj</span>
+                            </div>
+                            <div class="iban-row">
+                                <span class="iban-label">IBAN:</span>
+                                <span class="iban-val number" id="iban-display">TR00 0000 0000 0000 0000 0000 00</span>
+                                <button class="btn-copy" onclick="copyIban()">Kopyala</button>
+                            </div>
+                            <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">
+                                ⚠️ Havale açıklamasına <strong>sipariş numaranızı</strong> yazmayı unutmayın. Sipariş numaranız ödeme sonrasında gösterilecek.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Güven Rozetleri -->
+    <div class="security-bar">
+        <div class="sec-badge"><span class="icon">🔒</span> SSL Korumalı</div>
+        <div class="sec-badge"><span class="icon">✅</span> Resmi Onaylı</div>
+        <div class="sec-badge"><span class="icon">🛡️</span> 3D Secure</div>
+        <div class="sec-badge"><span class="icon">📞</span> 0500 123 45 67</div>
+    </div>
+
+    <!-- Sipariş Ver -->
+    <button class="btn-submit" id="btn-submit">
+        🔒 GÜVENLİ ÖDE (Kredi Kartı)
+    </button>
+
+</main>
+
+<script src="/js/checkout.js" defer></script>
+<script>
+function copyIban() {
+    const el = document.getElementById('iban-display');
+    if (!el) return;
+    navigator.clipboard?.writeText(el.textContent.replace(/\s/g, ''))
+        .then(() => { el.style.color='var(--accent)'; setTimeout(()=>el.style.color='',1500); })
+        .catch(() => {
+            const t = document.createElement('textarea');
+            t.value = el.textContent; document.body.appendChild(t);
+            t.select(); document.execCommand('copy'); t.remove();
+        });
+}
+</script>
+</body>
+</html>

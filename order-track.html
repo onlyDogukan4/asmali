@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <title>Sipariş Takip | Asmalı Ambalaj</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="padding-bottom:24px">
+
+<header class="site-header">
+    <a href="/" style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600">
+        <span style="font-size:18px">←</span> Ana Sayfa
+    </a>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:800;color:#fff;">Sipariş Takip</div>
+    <a class="header-tel" href="tel:05001234567">📞</a>
+</header>
+
+<main class="main-container">
+
+    <!-- Arama Formu -->
+    <div class="track-input-card">
+        <h2>🔍 Siparişinizi Takip Edin</h2>
+        <p>Sipariş kodunuzu girin, güncel durumunuzu öğrenin.</p>
+        <div style="display:flex;gap:10px;">
+            <input type="text" id="track-input" class="form-input" placeholder="Örn: SIP260617-1234"
+                   style="flex:1;text-transform:uppercase;font-family:monospace;font-size:15px;letter-spacing:1px">
+            <button onclick="trackOrder()" id="track-btn" style="
+                padding:0 18px;
+                background:linear-gradient(135deg,var(--primary-light),var(--primary));
+                color:#fff;border:none;border-radius:var(--r-sm);
+                font-size:14px;font-weight:800;white-space:nowrap;
+                min-height:48px;cursor:pointer;">
+                Sorgula
+            </button>
+        </div>
+        <div id="track-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none"></div>
+    </div>
+
+    <!-- Sonuç -->
+    <div id="track-result" style="display:none">
+
+        <div class="order-code-box" style="margin-bottom:16px">
+            <div class="order-code-label">Sipariş No</div>
+            <div class="order-code" id="res-id" style="font-size:20px">—</div>
+            <div id="res-date" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
+        </div>
+
+        <div class="status-timeline" id="status-timeline">
+            <!-- JS ile doldurulur -->
+        </div>
+
+        <div style="margin-top:16px;text-align:center">
+            <a id="wa-contact" href="#" style="
+                display:inline-flex;align-items:center;gap:8px;
+                background:#25D366;color:#fff;
+                padding:12px 20px;border-radius:100px;
+                font-size:14px;font-weight:800;text-decoration:none;
+                box-shadow:0 4px 12px rgba(37,211,102,.3)">
+                💬 WhatsApp İle Ulaş
+            </a>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+const TIMELINE_STEPS = [
+    { status: 'odeme-bekleniyor', label: 'Ödeme Bekleniyor',  desc: 'IBAN havalesi bekleniyor.',                  icon: '🏦' },
+    { status: 'onay-bekliyor',    label: 'Sipariş Onaylandı', desc: 'Ödeme alındı, sipariş onay bekliyor.',       icon: '✅' },
+    { status: 'hazirlaniyor',     label: 'Hazırlanıyor',      desc: 'Siparişiniz paketleniyor.',                  icon: '📦' },
+    { status: 'kargoda',          label: 'Kargoya Verildi',   desc: 'Siparişiniz kargo firmasına teslim edildi.', icon: '🚚' },
+    { status: 'teslim-edildi',    label: 'Teslim Edildi',     desc: 'Siparişiniz başarıyla teslim edildi! 🎉',    icon: '🏠' },
+];
+
+async function trackOrder() {
+    const input   = document.getElementById('track-input');
+    const orderId = input?.value?.trim().toUpperCase();
+    const errEl   = document.getElementById('track-error');
+    const btn     = document.getElementById('track-btn');
+
+    if (!orderId) { showErr('Sipariş kodu girin.'); return; }
+    errEl.style.display = 'none';
+    btn.textContent = '⏳';
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch('/api/order-track?id=' + encodeURIComponent(orderId));
+        const data = await res.json();
+
+        if (!res.ok) { showErr(data.error || 'Sipariş bulunamadı.'); return; }
+        renderResult(data);
+    } catch (e) {
+        showErr('Bağlantı hatası. Lütfen tekrar deneyin.');
+    } finally {
+        btn.textContent = 'Sorgula';
+        btn.disabled = false;
+    }
+}
+
+function showErr(msg) {
+    const el = document.getElementById('track-error');
+    el.textContent = msg; el.style.display = 'block';
+    document.getElementById('track-result').style.display = 'none';
+}
+
+function renderResult(order) {
+    document.getElementById('track-result').style.display = 'block';
+    document.getElementById('res-id').textContent = order.orderId;
+
+    const d = new Date(order.createdAt);
+    document.getElementById('res-date').textContent =
+        'Sipariş Tarihi: ' + d.toLocaleString('tr-TR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    // Timeline
+    const container = document.getElementById('status-timeline');
+    const currentIdx = TIMELINE_STEPS.findIndex(s => s.status === order.status);
+    const isIptal = order.status === 'iptal';
+
+    if (isIptal) {
+        container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--danger);font-weight:700;font-size:16px">
+            ❌ Bu sipariş iptal edilmiştir. Detay için iletişime geçin.
+        </div>`;
+    } else {
+        container.innerHTML = TIMELINE_STEPS.map((step, i) => {
+            let cls = '';
+            if (i < currentIdx) cls = 'done';
+            else if (i === currentIdx) cls = 'active';
+            return `
+            <div class="timeline-item ${cls}">
+                <div class="timeline-dot">${i <= currentIdx ? step.icon : '○'}</div>
+                <div class="timeline-info">
+                    <div class="timeline-label" style="color:${i===currentIdx?'var(--primary)':i<currentIdx?'var(--accent)':'var(--text-muted)'}">${step.label}</div>
+                    <div class="timeline-desc">${i === currentIdx ? step.desc : ''}</div>
+                    ${i === currentIdx && order.estimatedDelivery && order.estimatedDelivery !== 'Bilgi bekleniyor'
+                        ? `<div style="font-size:12px;font-weight:700;color:var(--primary-light);margin-top:4px">📅 ${order.estimatedDelivery}</div>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // WhatsApp
+    const tel = '905001234567';
+    const msg = encodeURIComponent(`Merhaba, ${order.orderId} numaralı siparişim hakkında bilgi almak istiyorum.`);
+    document.getElementById('wa-contact').href = `https://wa.me/${tel}?text=${msg}`;
+}
+
+// URL'de ID varsa otomatik sorgula
+document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id') || localStorage.getItem('last_order_id');
+    const input = document.getElementById('track-input');
+    if (id && input) {
+        input.value = id;
+        trackOrder();
+    }
+
+    // Enter ile sorgulama
+    input?.addEventListener('keydown', e => { if (e.key === 'Enter') trackOrder(); });
+});
+</script>
+</body>
+</html>

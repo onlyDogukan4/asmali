@@ -1,0 +1,269 @@
+/* js/checkout.js — Ödeme sayfası mantığı */
+
+const CART_KEY  = 'qrweb_cart';
+const FREE_SHIP = 1500;
+const SHIP_FEE  = 150;
+const IBAN_DISC = 0.02; // %2 indirim
+
+function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); }
+    catch { return []; }
+}
+function formatMoney(n) {
+    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 }).format(n);
+}
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function calcTotals(cart, method) {
+    const sub  = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const disc = method === 'iban' ? sub * IBAN_DISC : 0;
+    const after = sub - disc;
+    const ship = after >= FREE_SHIP ? 0 : SHIP_FEE;
+    return { sub, disc, after, ship, total: after + ship };
+}
+
+let selectedMethod = 'paytr';
+let cart = [];
+
+// ── Sayfa Başlangıcı ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    cart = getCart();
+
+    if (cart.length === 0) {
+        window.location.href = '/';
+        return;
+    }
+
+    renderSummary();
+    setupPaymentToggle();
+    setupForm();
+});
+
+function renderSummary() {
+    const t = calcTotals(cart, selectedMethod);
+
+    // Ürün listesi
+    const listEl = document.getElementById('summary-items');
+    if (listEl) {
+        listEl.innerHTML = cart.map(i => `
+            <div class="summary-item">
+                <div class="summary-item-info">
+                    <div class="summary-item-name">${escHtml(i.name)}</div>
+                    <div class="summary-item-sub">${i.qty} ${escHtml(i.unit || 'adet')} × ${formatMoney(i.price)}</div>
+                </div>
+                <div class="summary-item-price">${formatMoney(i.price * i.qty)}</div>
+            </div>`).join('');
+    }
+
+    // Toplamlar
+    const totEl = document.getElementById('summary-totals');
+    if (totEl) {
+        const discRow = t.disc > 0
+            ? `<div class="total-row" style="color:var(--primary-light)">
+                   <span>IBAN/Havale İndirimi (%2)</span>
+                   <span>−${formatMoney(t.disc)}</span>
+               </div>` : '';
+        const shipRow = t.ship === 0
+            ? `<div class="total-row free"><span>🎁 Kargo</span><span>ÜCRETSİZ</span></div>`
+            : `<div class="total-row"><span>Kargo</span><span>${formatMoney(t.ship)}</span></div>`;
+        totEl.innerHTML = `
+            <div class="total-row"><span>Ara Toplam</span><span>${formatMoney(t.sub)}</span></div>
+            ${discRow}${shipRow}
+            <div class="total-row grand"><span>ÖDENECEK TUTAR</span><span>${formatMoney(t.total)}</span></div>`;
+    }
+}
+
+// ── Ödeme Yöntemi ─────────────────────────────────────────────────────────────
+function setupPaymentToggle() {
+    document.querySelectorAll('.payment-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            selectedMethod = opt.dataset.method;
+            document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            renderSummary();
+
+            const ibanBox = document.getElementById('iban-info-box');
+            if (ibanBox) ibanBox.classList.toggle('show', selectedMethod === 'iban');
+        });
+    });
+}
+
+// ── Form Validasyon ───────────────────────────────────────────────────────────
+const REQUIRED = ['customerName','customerPhone','customerAddress'];
+
+function validateForm() {
+    let ok = true;
+    REQUIRED.forEach(id => {
+        const el  = document.getElementById(id);
+        const err = document.getElementById(id + '-err');
+        if (!el?.value.trim()) {
+            el?.classList.add('error');
+            if (err) { err.textContent = 'Bu alan gerekli'; err.classList.add('show'); }
+            ok = false;
+        } else {
+            el?.classList.remove('error');
+            if (err) err.classList.remove('show');
+        }
+    });
+    // Telefon formatı
+    const phoneEl = document.getElementById('customerPhone');
+    if (phoneEl?.value.trim()) {
+        const digits = phoneEl.value.replace(/\D/g, '');
+        if (digits.length < 10) {
+            phoneEl.classList.add('error');
+            const err = document.getElementById('customerPhone-err');
+            if (err) { err.textContent = 'Geçerli bir telefon girin'; err.classList.add('show'); }
+            ok = false;
+        }
+    }
+    return ok;
+}
+
+function setupForm() {
+    REQUIRED.forEach(id => {
+        const el = document.getElementById(id);
+        el?.addEventListener('input', () => {
+            el.classList.remove('error');
+            const err = document.getElementById(id + '-err');
+            if (err) err.classList.remove('show');
+        });
+    });
+
+    const submitBtn = document.getElementById('btn-submit');
+    if (submitBtn) submitBtn.addEventListener('click', handleSubmit);
+}
+
+function getUserData() {
+    return {
+        name:    document.getElementById('customerName')?.value.trim()    || '',
+        phone:   document.getElementById('customerPhone')?.value.trim()   || '',
+        email:   document.getElementById('customerEmail')?.value.trim()   || '',
+        address: document.getElementById('customerAddress')?.value.trim() || '',
+        note:    document.getElementById('customerNote')?.value.trim()    || '',
+    };
+}
+
+async function handleSubmit() {
+    if (!validateForm()) {
+        document.querySelector('.form-input.error')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    const t = calcTotals(cart, selectedMethod);
+    const user = getUserData();
+
+    if (selectedMethod === 'paytr') {
+        await payWithPaytr(user, t.total);
+    } else {
+        await payWithIban(user, t.total);
+    }
+}
+
+// ── PayTR ─────────────────────────────────────────────────────────────────────
+async function payWithPaytr(user, total) {
+    const btn = document.getElementById('btn-submit');
+    setSubmitLoading(btn, true);
+
+    try {
+        const res  = await fetch('/api/paytr-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cart: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.qty })),
+                user, totalAmount: total,
+            }),
+        });
+        const data = await res.json();
+
+        if (!data.token) {
+            alert('Ödeme başlatılamadı: ' + (data.error || 'Bilinmeyen hata'));
+            return;
+        }
+
+        // Sipariş ID'yi kaydet (success sayfasında gösterilir)
+        localStorage.setItem('last_order_id', data.orderId);
+
+        if (data.mock) {
+            alert('🧪 TEST MODU: PayTR mock token. Gerçek deploy\'da iframe açılacak.\nSipariş ID: ' + data.orderId);
+            window.location.href = '/order-success.html?method=paytr';
+            return;
+        }
+
+        showPaytrModal(data.token);
+    } catch (e) {
+        console.error('PayTR hatası:', e);
+        alert('Ödeme sistemine bağlanılamadı. Lütfen tekrar deneyin.');
+    } finally {
+        setSubmitLoading(btn, false);
+    }
+}
+
+function showPaytrModal(token) {
+    const modal = document.createElement('div');
+    modal.className = 'paytr-modal';
+    modal.id = 'paytr-modal';
+    modal.innerHTML = `
+        <div class="paytr-sheet">
+            <div class="paytr-sheet-head">
+                <div class="paytr-sheet-title">🔒 Güvenli Ödeme</div>
+                <button class="paytr-close-btn" id="paytr-close">×</button>
+            </div>
+            <iframe class="paytr-iframe" src="https://www.paytr.com/odeme/guvenli/${token}" title="PayTR Ödeme" allow="payment"></iframe>
+        </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('paytr-close').onclick = () => modal.remove();
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+// ── IBAN ─────────────────────────────────────────────────────────────────────
+async function payWithIban(user, total) {
+    const btn = document.getElementById('btn-submit');
+    setSubmitLoading(btn, true);
+
+    try {
+        const res  = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                customerName:    user.name,
+                customerPhone:   user.phone,
+                customerEmail:   user.email,
+                customerAddress: user.address,
+                customerNote:    user.note,
+                items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.qty })),
+                totalAmount:     total,
+                paymentMethod:   'iban',
+            }),
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            alert('Sipariş oluşturulamadı: ' + (data.error || 'Bilinmeyen hata'));
+            return;
+        }
+
+        localStorage.setItem('last_order_id', data.orderId);
+        localStorage.setItem('last_iban_info', JSON.stringify(data.ibanInfo));
+        localStorage.removeItem(CART_KEY);
+
+        window.location.href = '/order-success.html?method=iban';
+    } catch (e) {
+        console.error('IBAN sipariş hatası:', e);
+        alert('Sipariş oluşturulamadı. Lütfen tekrar deneyin.');
+    } finally {
+        setSubmitLoading(btn, false);
+    }
+}
+
+function setSubmitLoading(btn, loading) {
+    if (!btn) return;
+    btn.disabled = loading;
+    if (loading) {
+        btn.innerHTML = '<span class="spinner"></span> İşleniyor...';
+    } else {
+        btn.innerHTML = selectedMethod === 'paytr'
+            ? '🔒 GÜVENLİ ÖDE (Kredi Kartı)'
+            : '✓ SİPARİŞİ TAMAMLA (IBAN)';
+    }
+}
