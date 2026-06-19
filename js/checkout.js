@@ -47,30 +47,38 @@ function renderSummary() {
     const listEl = document.getElementById('summary-items');
     if (listEl) {
         listEl.innerHTML = cart.map(i => `
-            <div class="summary-item">
-                <div class="summary-item-info">
-                    <div class="summary-item-name">${escHtml(i.name)}</div>
-                    <div class="summary-item-sub">${i.qty} ${escHtml(i.unit || 'adet')} × ${formatMoney(i.price)}</div>
+            <div class="summary-item" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+                <img src="${i.image || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23e5e7eb%22/><text x=%2250%22 y=%2254%22 text-anchor=%22middle%22 font-size=%2230%22>📦</text></svg>'}" class="summary-item-img" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border);flex-shrink:0;">
+                <div class="summary-item-info" style="flex:1;">
+                    <div class="summary-item-name" style="font-weight:700;color:var(--text);">${escHtml(i.name)}</div>
+                    <div class="summary-item-sub" style="font-size:12px;color:var(--text-muted);">${i.qty} ${escHtml(i.unit || 'Adet')} x ${formatMoney(i.price)}</div>
                 </div>
-                <div class="summary-item-price">${formatMoney(i.price * i.qty)}</div>
             </div>`).join('');
     }
 
     // Toplamlar
     const totEl = document.getElementById('summary-totals');
+    const stickyTotalEl = document.getElementById('checkout-bottom-total-price');
     if (totEl) {
+        const base = t.after / 1.20;
+        const kdv = t.after - base;
+
         const discRow = t.disc > 0
             ? `<div class="total-row" style="color:var(--primary-light)">
                    <span>IBAN/Havale İndirimi (%2)</span>
                    <span>−${formatMoney(t.disc)}</span>
                </div>` : '';
         const shipRow = t.ship === 0
-            ? `<div class="total-row free"><span>🎁 Kargo</span><span>ÜCRETSİZ</span></div>`
+            ? `<div class="total-row free"><span>Kargo</span><span>ÜCRETSİZ</span></div>`
             : `<div class="total-row"><span>Kargo</span><span>${formatMoney(t.ship)}</span></div>`;
         totEl.innerHTML = `
-            <div class="total-row"><span>Ara Toplam</span><span>${formatMoney(t.sub)}</span></div>
+            <div class="total-row"><span>Ara Toplam:</span><span>${formatMoney(base)}</span></div>
+            <div class="total-row"><span>KDV (%20):</span><span>${formatMoney(kdv)}</span></div>
             ${discRow}${shipRow}
-            <div class="total-row grand"><span>ÖDENECEK TUTAR</span><span>${formatMoney(t.total)}</span></div>`;
+            <div class="total-row grand"><span>TOPLAM ÖDENECEK</span><span>${formatMoney(t.total)}</span></div>`;
+    }
+    if (stickyTotalEl) {
+        stickyTotalEl.textContent = formatMoney(t.total);
     }
 }
 
@@ -110,10 +118,10 @@ function validateForm() {
     const phoneEl = document.getElementById('customerPhone');
     if (phoneEl?.value.trim()) {
         const digits = phoneEl.value.replace(/\D/g, '');
-        if (digits.length < 10) {
+        if (digits.length < 11) {
             phoneEl.classList.add('error');
             const err = document.getElementById('customerPhone-err');
-            if (err) { err.textContent = 'Geçerli bir telefon girin'; err.classList.add('show'); }
+            if (err) { err.textContent = 'Geçerli bir telefon girin (05xx ...)'; err.classList.add('show'); }
             ok = false;
         }
     }
@@ -130,8 +138,39 @@ function setupForm() {
         });
     });
 
+    // Telefon Maskesi
+    const phoneEl = document.getElementById('customerPhone');
+    if (phoneEl) {
+        phoneEl.addEventListener('input', (e) => {
+            let val = phoneEl.value.replace(/\D/g, '');
+            if (val.length > 0 && val[0] !== '0') {
+                val = '0' + val;
+            }
+            let formatted = '';
+            if (val.length > 0) {
+                formatted += val.substring(0, 1); // "0"
+            }
+            if (val.length > 1) {
+                formatted += ' (' + val.substring(1, 4); // "0 (5xx"
+            }
+            if (val.length > 4) {
+                formatted += ') ' + val.substring(4, 7); // "0 (5xx) xxx"
+            }
+            if (val.length > 7) {
+                formatted += ' ' + val.substring(7, 9); // "0 (5xx) xxx xx"
+            }
+            if (val.length > 9) {
+                formatted += ' ' + val.substring(9, 11); // "0 (5xx) xxx xx xx"
+            }
+            phoneEl.value = formatted;
+        });
+    }
+
     const submitBtn = document.getElementById('btn-submit');
     if (submitBtn) submitBtn.addEventListener('click', handleSubmit);
+
+    const stickyBtn = document.getElementById('btn-checkout-sticky');
+    if (stickyBtn) stickyBtn.addEventListener('click', handleSubmit);
 }
 
 function getUserData() {
@@ -162,8 +201,7 @@ async function handleSubmit() {
 
 // ── PayTR ─────────────────────────────────────────────────────────────────────
 async function payWithPaytr(user, total) {
-    const btn = document.getElementById('btn-submit');
-    setSubmitLoading(btn, true);
+    setSubmitLoading(true);
 
     try {
         const res  = await fetch('/api/paytr-token', {
@@ -195,7 +233,7 @@ async function payWithPaytr(user, total) {
         console.error('PayTR hatası:', e);
         alert('Ödeme sistemine bağlanılamadı. Lütfen tekrar deneyin.');
     } finally {
-        setSubmitLoading(btn, false);
+        setSubmitLoading(false);
     }
 }
 
@@ -218,8 +256,7 @@ function showPaytrModal(token) {
 
 // ── IBAN ─────────────────────────────────────────────────────────────────────
 async function payWithIban(user, total) {
-    const btn = document.getElementById('btn-submit');
-    setSubmitLoading(btn, true);
+    setSubmitLoading(true);
 
     try {
         const res  = await fetch('/api/orders', {
@@ -252,18 +289,28 @@ async function payWithIban(user, total) {
         console.error('IBAN sipariş hatası:', e);
         alert('Sipariş oluşturulamadı. Lütfen tekrar deneyin.');
     } finally {
-        setSubmitLoading(btn, false);
+        setSubmitLoading(false);
     }
 }
 
-function setSubmitLoading(btn, loading) {
-    if (!btn) return;
-    btn.disabled = loading;
-    if (loading) {
-        btn.innerHTML = '<span class="spinner"></span> İşleniyor...';
-    } else {
-        btn.innerHTML = selectedMethod === 'paytr'
-            ? '🔒 GÜVENLİ ÖDE (Kredi Kartı)'
-            : '✓ SİPARİŞİ TAMAMLA (IBAN)';
-    }
+function setSubmitLoading(loading) {
+    const submitBtn = document.getElementById('btn-submit');
+    const stickyBtn = document.getElementById('btn-checkout-sticky');
+
+    const update = (b) => {
+        if (!b) return;
+        b.disabled = loading;
+        if (loading) {
+            b.innerHTML = '<span class="spinner"></span> İşleniyor...';
+        } else {
+            if (b === stickyBtn) {
+                b.innerHTML = 'ÖDE ➔';
+            } else {
+                b.innerHTML = '<span class="icon">🛡️</span> [ ÖDEMEYİ TAMAMLA ]';
+            }
+        }
+    };
+
+    update(submitBtn);
+    update(stickyBtn);
 }

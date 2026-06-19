@@ -75,7 +75,7 @@ function buildCard(product) {
                     <button class="qty-btn qty-plus" data-id="${product.id}" aria-label="Artır">+</button>
                 </div>
             </div>
-            <button class="btn-add-cart" id="btn-add-${product.id}" data-id="${product.id}" data-price="${product.price}" data-name="${escAttr(product.name)}" data-unit="${escAttr(product.unit || 'Koli')}">
+            <button class="btn-add-cart" id="btn-add-${product.id}" data-id="${product.id}" data-price="${product.price}" data-name="${escAttr(product.name)}" data-image="${escAttr(product.image)}" data-unit="${escAttr(product.unit || 'Koli')}">
                 <span class="cart-icon">🛒</span> SEPETE EKLE
             </button>
         </div>`;
@@ -120,6 +120,7 @@ function addCartHandler(e) {
     const name  = btn.dataset.name;
     const price = parseFloat(btn.dataset.price);
     const unit  = btn.dataset.unit;
+    const image = btn.dataset.image;
     const qtyEl = document.getElementById('qty-' + id);
     const qty   = parseInt(qtyEl?.textContent || '1') || 1;
 
@@ -128,7 +129,7 @@ function addCartHandler(e) {
     if (exists >= 0) {
         cart[exists].qty += qty;
     } else {
-        cart.push({ id, name, price, unit, qty });
+        cart.push({ id, name, price, unit, qty, image });
     }
     saveCart(cart);
 

@@ -148,6 +148,14 @@ function renderOrders(orders) {
             updateStatus(btn.dataset.order, btn.dataset.status);
         });
     });
+
+    // Silme butonları
+    container.querySelectorAll('.btn-delete-order').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteOrder(btn.dataset.order);
+        });
+    });
 }
 
 function updateStats(orders) {
@@ -180,16 +188,36 @@ const STATUS_LABELS = {
     'iptal':            'İptal Edildi',
 };
 
+async function deleteOrder(orderId) {
+    if (!confirm('Bu siparişi silmek istediğinize emin misiniz?')) return;
+
+    try {
+        const res = await fetch(`/api/orders?orderId=${orderId}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        if (!res.ok) {
+            const d = await res.json();
+            alert('Hata: ' + (d.error || 'Silme işlemi başarısız'));
+            return;
+        }
+        await loadOrders();
+    } catch (e) {
+        alert('Bağlantı hatası: ' + e.message);
+    }
+}
+
 function buildOrderCard(o) {
     const badgeClass = 'badge-' + o.status;
     const date = new Date(o.createdAt).toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
-    const payBadge = o.paymentMethod === 'paytr' ? 'payment-paytr' : 'payment-iban';
-    const payLabel = o.paymentMethod === 'paytr' ? '💳 Kart' : '🏦 IBAN';
+    const payLabel = o.paymentMethod === 'paytr' ? '💳 Kredi Kartı' : '🏛️ IBAN';
 
     const nextStatuses = getNextStatuses(o.status);
     const actionsHtml = nextStatuses.map((s, i) =>
         `<button class="btn-status${i===0?' primary-action':''}" data-order="${o.orderId}" data-status="${s}">${STATUS_LABELS[s]}</button>`
     ).join('');
+
+    const itemsText = o.itemsSummary || o.items?.map?.(i => `${i.quantity}x ${i.name}`)?.join(', ') || '—';
 
     return `
     <div class="order-card" id="oc-${o.orderId}">
@@ -198,33 +226,32 @@ function buildOrderCard(o) {
                 <div class="order-id">${escHtml(o.orderId)}</div>
                 <div class="order-time">${date}</div>
             </div>
-            <span class="order-status-badge ${badgeClass}">${STATUS_LABELS[o.status] || o.status}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="order-status-badge ${badgeClass}">${STATUS_LABELS[o.status] || o.status}</span>
+                <button class="btn-delete-order" data-order="${o.orderId}" title="Siparişi Sil" style="background:transparent;border:none;font-size:16px;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;">🗑️</button>
+            </div>
         </div>
         <div class="order-card-body">
             <div class="order-meta">
                 <div class="order-meta-item">
-                    <div class="order-meta-label">Müşteri</div>
-                    <div class="order-meta-value">${escHtml(o.customerName)}</div>
+                    <div class="order-meta-label">MÜŞTERI</div>
+                    <div class="order-meta-value name">${escHtml(o.customerName)}</div>
+                    <div class="order-meta-value phone"><a href="tel:${escHtml(o.customerPhone)}">${escHtml(o.customerPhone)}</a></div>
                 </div>
                 <div class="order-meta-item">
-                    <div class="order-meta-label">Telefon</div>
-                    <div class="order-meta-value"><a href="tel:${escHtml(o.customerPhone)}" style="color:var(--accent)">${escHtml(o.customerPhone)}</a></div>
-                </div>
-                <div class="order-meta-item">
-                    <div class="order-meta-label">Tutar</div>
+                    <div class="order-meta-label">TUTAR & ÖDEME</div>
                     <div class="order-meta-value price">${formatMoney(o.totalPrice)}</div>
-                </div>
-                <div class="order-meta-item">
-                    <div class="order-meta-label">Ödeme</div>
-                    <div class="order-meta-value"><span class="order-payment-badge ${payBadge}">${payLabel}</span></div>
+                    <div class="order-meta-value payment-method">${payLabel}</div>
                 </div>
             </div>
-            <div class="order-items-text">
-                📦 ${escHtml(o.itemsSummary || o.items?.map?.(i=>i.name)?.join(', ') || '—')}
-                ${o.customerNote ? `<br>📝 Not: ${escHtml(o.customerNote)}` : ''}
+            <div class="order-address-section">
+                <div class="order-meta-label">TESLİMAT ADRESİ</div>
+                <div class="order-meta-value address">📍 ${escHtml(o.customerAddress || '—')}</div>
+                ${o.customerNote ? `<div class="order-meta-value note">📝 Not: ${escHtml(o.customerNote)}</div>` : ''}
             </div>
-            <div style="font-size:12px;color:#64748B;">
-                📍 ${escHtml(o.customerAddress || '—')}
+            <div class="order-items-accordion">
+                <span class="accordion-title">💼 ${escHtml(itemsText)}</span>
+                <span class="accordion-arrow">➔</span>
             </div>
         </div>
         ${actionsHtml ? `<div class="order-actions">${actionsHtml}</div>` : ''}
