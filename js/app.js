@@ -15,7 +15,7 @@ function saveCart(cart) {
 }
 function calcTotals(cart) {
     const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const ship = sub >= FREE_SHIP ? 0 : SHIP_FEE;
+    const ship = SHIP_FEE; // Her zaman kargo ücreti ekle
     return { sub, ship, total: sub + ship };
 }
 

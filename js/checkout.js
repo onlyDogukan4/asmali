@@ -19,7 +19,7 @@ function calcTotals(cart, method) {
     const sub  = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const disc = method === 'iban' ? sub * IBAN_DISC : 0;
     const after = sub - disc;
-    const ship = after >= FREE_SHIP ? 0 : SHIP_FEE;
+    const ship = SHIP_FEE; // Her zaman kargo ücreti ekle
     return { sub, disc, after, ship, total: after + ship };
 }
 
